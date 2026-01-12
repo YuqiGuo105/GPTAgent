@@ -21,6 +21,8 @@
 
     <modules>
         <module>agent-service</module>
+        <module>kb-knowledge-service</module>
+        <module>mrpot-knowledge-ui</module>
     </modules>
 
     <properties>

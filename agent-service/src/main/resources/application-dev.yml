@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: MrPot
+
+  codec:
+    max-in-memory-size: 10MB
+
+  # === PostgreSQL（Dev）===
+  datasource:
+    # ✅ 用环境变量 + 本地默认，避免把 Railway 凭据写死进仓库
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:railway}
+    username: ${PGUSER:postgres}
+    password: ${PGPASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+  # === Redis（Dev）===
+  data:
+    redis:
+      # ✅ 用环境变量；本地默认 redis://localhost:6379
+      url: ${REDIS_URL:redis://localhost:6379}
+      timeout: 3000
+
+  cache:
+    type: redis
+
+  # === Spring AI 模型配置（Dev）===
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: gpt-4.1-mini
+          temperature: 0.3
+      embedding:
+        options:
+          model: text-embedding-3-small
+          dimensions: 1536
+
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+          temperature: 0.2
+
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY:}
+        chat:
+          options:
+            model: gemini-2.0-flash
+            temperature: 0.3
+
+    dashscope:
+      base-url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+      api-key: ${SPRING_AI_DASHSCOPE_API_KEY:${DASHSCOPE_API_KEY:}}
+      chat:
+        options:
+          model: ${DASHSCOPE_CHAT_MODEL:qwen-vl-plus}
+          temperature: ${QWEN_TEMPERATURE:0.3}
+
+  # === CORS configuration ===
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    allow-credentials: false

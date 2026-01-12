@@ -1,0 +1,118 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.example</groupId>
+        <artifactId>gptagent-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>mrpot-knowledge-ui</artifactId>
+    <packaging>pom</packaging>
+
+    <properties>
+        <!-- 建议至少 18（React 生态更稳）；你也可以继续 16.17.0 -->
+        <node.version>18.20.4</node.version>
+
+        <!-- 是否跳过 UI 测试：mvn -DskipUiTests=true -->
+        <skipUiTests>false</skipUiTests>
+    </properties>
+
+    <build>
+        <plugins>
+
+            <!-- ✅ 用 maven-clean-plugin 删除前端产物（不要在 clean 生命周期跑 npm） -->
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${project.basedir}/node_modules</directory>
+                        </fileset>
+                        <fileset>
+                            <directory>${project.basedir}/build</directory>
+                        </fileset>
+                        <!-- frontend-maven-plugin 下载的 node/npm 放这里 -->
+                        <fileset>
+                            <directory>${project.basedir}/.frontend</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.0</version>
+
+                <configuration>
+                    <workingDirectory>${project.basedir}</workingDirectory>
+                    <installDirectory>${project.basedir}/.frontend</installDirectory>
+                </configuration>
+
+                <executions>
+
+                    <!-- 下载并使用本地 node/npm（不依赖系统安装） -->
+                    <execution>
+                        <id>install-node</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>v${node.version}</nodeVersion>
+                            <!-- 不强行指定 npmVersion：用 node 自带 npm，减少版本不匹配坑 -->
+                        </configuration>
+                    </execution>
+
+                    <!-- 安装依赖：有 package-lock.json 推荐用 ci -->
+                    <execution>
+                        <id>npm-ci</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- 构建 -->
+                    <execution>
+                        <id>npm-build</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- 测试（CRA 默认 watch，会卡住，所以强制关闭 watch，并设置 CI=true） -->
+                    <execution>
+                        <id>npm-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipUiTests}</skip>
+                            <arguments>test -- --watchAll=false</arguments>
+                            <environmentVariables>
+                                <CI>true</CI>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
