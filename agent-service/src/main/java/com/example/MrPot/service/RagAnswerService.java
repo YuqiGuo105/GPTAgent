@@ -61,6 +61,7 @@ public class RagAnswerService {
     private final ActionPlanTools actionPlanTools;
     private final RedisChatMemoryService chatMemoryService;
     private final Map<String, ChatClient> chatClients;
+    private final CandidateIngestionService candidateIngestionService;
 
     // --- Minimal analytics logger (2-table design) ---
     private final RagRunLogger runLogger;
@@ -2000,8 +2001,52 @@ public class RagAnswerService {
                     retrieval
             );
             logIngestionClient.ingestAsync(evt);
+
+            CandidateIngestRequest ingestRequest = new CandidateIngestRequest(
+                    sessionId,
+                    model,
+                    topK,
+                    minScore,
+                    latencyMs,
+                    outOfScope,
+                    error,
+                    question,
+                    answerText,
+                    buildEvidencePayload(retrieval),
+                    Map.of("no_evidence", outOfScope)
+            );
+            candidateIngestionService.ingest(ingestRequest);
         } catch (Exception ignored) {
             // Logging must never break answering
         }
+    }
+
+    private Map<String, Object> buildEvidencePayload(RagRetrievalResult retrieval) {
+        if (retrieval == null) return Map.of();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("question", retrieval.question());
+        payload.put("context_preview", truncate(retrieval.context(), MAX_EVIDENCE_PREVIEW_CHARS));
+
+        List<Map<String, Object>> docs = new ArrayList<>();
+        if (retrieval.documents() != null) {
+            for (ScoredDocument scored : retrieval.documents()) {
+                KbDocument doc = scored.document();
+                if (doc == null) continue;
+
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("id", doc.getId());
+                item.put("doc_type", doc.getDocType());
+                item.put("score", round3(scored.score()));
+                item.put("content_preview", truncate(doc.getContent(), MAX_EVIDENCE_PREVIEW_CHARS));
+                if (doc.getMetadata() != null) {
+                    item.put("metadata", OM.convertValue(doc.getMetadata(), Map.class));
+                }
+                docs.add(item);
+            }
+        }
+        payload.put("documents", docs);
+
+        return payload;
     }
 }
