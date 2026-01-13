@@ -11,7 +11,10 @@ import org.springframework.test.context.ActiveProfiles;
         properties = {
                 "spring.ai.model.chat=none",
                 "spring.ai.model.embedding=none",
-                "spring.ai.openai.api-key=test"
+                "spring.ai.openai.api-key=test",
+                "app.elastic.base-url=http://localhost:9200",
+                "app.elastic.username=user",
+                "app.elastic.password=pass"
         }
 )
 @ActiveProfiles("test")
