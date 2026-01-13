@@ -58,7 +58,7 @@ Swagger UI is available at http://localhost:8080/swagger-ui when the app is runn
 
 ## Configuration
 
-- **DashScope (Qwen)**: provide an API key via the environment variable `DASHSCOPE_API_KEY` so Spring AI can initialize the DashScope client and related tooling.
+- **DashScope (Qwen)**: provide an API key via `spring.ai.dashscope.api-key` (for example in `application.properties`/`application.yml`) or via the environment variables `SPRING_AI_DASHSCOPE_API_KEY`/`DASHSCOPE_API_KEY` so Spring AI can initialize the DashScope client and related tooling.
 - **Server**: defaults to port `8080`. Adjust standard Spring Boot settings (e.g., via `application.yaml`) as needed for your environment.
 - **Code search (optional)**: set `mrpot.code.root` to an absolute repo path to enable the `code_search` tool for deep thinking.
 
@@ -71,3 +71,16 @@ Swagger UI is available at http://localhost:8080/swagger-ui when the app is runn
 ### CI/CD
 
 Expose `DASHSCOPE_API_KEY` (or `SPRING_AI_DASHSCOPE_API_KEY`) as a secret in your pipeline and pass it into the Maven or runtime environment so the DashScope client can start.
+
+Example configuration values:
+
+```properties
+spring.ai.dashscope.api-key=YOUR_DASHSCOPE_API_KEY
+```
+
+```yaml
+spring:
+  ai:
+    dashscope:
+      api-key: YOUR_DASHSCOPE_API_KEY
+```
