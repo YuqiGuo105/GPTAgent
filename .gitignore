@@ -1,0 +1,87 @@
+# =========================
+# IDEs / Editors
+# =========================
+.idea/
+*.iml
+*.ipr
+*.iws
+
+.vscode/
+*.code-workspace
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# =========================
+# OS junk
+# =========================
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =========================
+# Java / Maven / Gradle
+# =========================
+*.class
+*.log
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.buildNumber
+
+# Gradle
+.gradle/
+**/build/
+!**/src/**/build/
+
+# =========================
+# Node / JS
+# =========================
+node_modules/
+node_mode/          # (in case this folder exists)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# build outputs
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+.parcel-cache/
+.cache/
+.eslintcache
+
+# env files / secrets
+.env
+.env.*
+!.env.example
+
+# =========================
+# Misc
+# =========================
+logs/
+tmp/
+temp/
+*.swp
+*.swo

@@ -1,7 +1,19 @@
 spring:
   # 在测试环境直接排除 pgvector 自动装配，避免 H2 执行 PostgreSQL 专属的扩展语句
   autoconfigure:
-    exclude: org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+    exclude:
+    - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAgentAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioSpeechAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAudioTranscriptionAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeImageAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeEmbeddingAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeVectorStoreAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeRerankAutoConfiguration
+    - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeVideoAutoConfiguration
+
+
 
   datasource:
     url: jdbc:h2:mem:mrpot_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
