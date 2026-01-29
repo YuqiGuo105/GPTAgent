@@ -177,7 +177,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-${{ needs.version_calculator.outputs.VERSION }}
-          path: target/*.jar
+          path: "**/target/*.jar"
           if-no-files-found: error
           retention-days: 7
 
@@ -186,7 +186,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: target/surefire-reports/**
+          path: "**/target/surefire-reports/**"
           retention-days: 7
 
   # ──────────────────────────────────────────────────────────────
