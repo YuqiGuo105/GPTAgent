@@ -177,7 +177,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-${{ needs.version_calculator.outputs.VERSION }}
-          path: target/*.jar
+          path: "**/target/*.jar"
           if-no-files-found: error
           retention-days: 7
 
@@ -186,7 +186,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: target/surefire-reports/**
+          path: "**/target/surefire-reports/**"
           retention-days: 7
 
   # ──────────────────────────────────────────────────────────────
@@ -239,7 +239,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          total_xml=$(ls -1 test-reports/*.xml 2>/dev/null | wc -l | xargs)
+          total_xml=$(find test-reports -type f -name "*.xml" 2>/dev/null | wc -l | xargs)
           echo "Collected $total_xml surefire XML report(s)."
           if grep -E '<failure|<error' -R test-reports >/dev/null 2>&1; then
             echo "::warning ::Unit test failures or errors were detected; see the report artifacts."
