@@ -62,9 +62,7 @@ public class RagAnswerService {
     private final RedisChatMemoryService chatMemoryService;
     private final Map<String, ChatClient> chatClients;
 
-    // --- Minimal analytics logger (2-table design) ---
-    private final RagRunLogger runLogger;
-    private final LogIngestionClient logIngestionClient;
+    private final CandidateIngestionService candidateIngestionService;
 
     private static final int DEFAULT_TOP_K = 3;
     private static final double DEFAULT_MIN_SCORE = 0.60;
@@ -233,15 +231,17 @@ public class RagAnswerService {
             error = ex.toString();
             int latencyMs = (int) ((System.nanoTime() - t0) / 1_000_000);
             safeLogOnce(session.id(), request.question(), model, topK, minScore,
-                    prompt, answer, latencyMs, noEvidence, error, ctx.retrieval);
+                    answer, latencyMs, noEvidence, error, ctx.retrieval);
             throw ex;
         }
 
-        chatMemoryService.appendTurn(session.id(), request.question(), answer, session.temporary());
+        if (shouldAppendHistory(ctx.scopeGuardResult)) {
+            chatMemoryService.appendTurn(session.id(), request.question(), answer, session.temporary());
+        }
 
         int latencyMs = (int) ((System.nanoTime() - t0) / 1_000_000);
         safeLogOnce(session.id(), request.question(), model, topK, minScore,
-                prompt, answer, latencyMs, noEvidence, null, ctx.retrieval);
+                answer, latencyMs, noEvidence, null, ctx.retrieval);
 
         return new RagAnswer(answer, ctx.retrieval == null ? List.of() : ctx.retrieval.documents());
     }
@@ -297,12 +297,14 @@ public class RagAnswerService {
                             .doOnError(ex -> errorRef.set(ex.toString()))
                             .doFinally(signalType -> {
                                 String finalAnswer = aggregate.get().toString();
-                                chatMemoryService.appendTurn(session.id(), request.question(), finalAnswer, session.temporary());
+                                if (shouldAppendHistory(ctx.scopeGuardResult)) {
+                                    chatMemoryService.appendTurn(session.id(), request.question(), finalAnswer, session.temporary());
+                                }
 
                                 Mono.fromRunnable(() -> {
                                             int latencyMs = (int) ((System.nanoTime() - t0) / 1_000_000);
                                             safeLogOnce(session.id(), request.question(), model, topK, minScore,
-                                                    prompt, finalAnswer, latencyMs, noEvidence, errorRef.get(), ctx.retrieval);
+                                                    finalAnswer, latencyMs, noEvidence, errorRef.get(), ctx.retrieval);
                                         })
                                         .subscribeOn(Schedulers.boundedElastic())
                                         .subscribe();
@@ -327,9 +329,9 @@ public class RagAnswerService {
         List<String> urls = request.resolveFileUrls(MAX_FILE_URLS);
 
         AtomicReference<StringBuilder> aggregate = new AtomicReference<>(new StringBuilder());
-        AtomicReference<String> promptRef = new AtomicReference<>(null);
         AtomicReference<Boolean> noEvidenceRef = new AtomicReference<>(false);
         AtomicReference<RagRetrievalResult> retrievalRef = new AtomicReference<>(null);
+        AtomicReference<Boolean> outOfScopeRef = new AtomicReference<>(false);
         AtomicReference<String> errorRef = new AtomicReference<>(null);
 
         Mono<String> historyMono =
@@ -738,6 +740,7 @@ public class RagAnswerService {
 
                             boolean noEvidence = !ctx.hasAnyRef;
                             noEvidenceRef.set(noEvidence);
+                            outOfScopeRef.set(!shouldAppendHistory(ctx.scopeGuardResult));
 
                             String historyText = truncate(history, MAX_HISTORY_CHARS);
                             String prompt = buildPrompt(
@@ -758,7 +761,6 @@ public class RagAnswerService {
                                     ctx.assumptionResult,
                                     ctx.actionPlan
                             );
-                            promptRef.set(prompt);
 
                             return chatClient.prompt()
                                     .system(SYSTEM_PROMPT)
@@ -773,7 +775,9 @@ public class RagAnswerService {
                         .doOnError(ex -> errorRef.set(ex.toString()))
                         .doFinally(signalType -> {
                             String finalAnswer = aggregate.get().toString();
-                            chatMemoryService.appendTurn(session.id(), request.question(), finalAnswer, session.temporary());
+                            if (!Boolean.TRUE.equals(outOfScopeRef.get())) {
+                                chatMemoryService.appendTurn(session.id(), request.question(), finalAnswer, session.temporary());
+                            }
 
                             Mono.fromRunnable(() -> {
                                         int latencyMs = (int) ((System.nanoTime() - t0) / 1_000_000);
@@ -783,7 +787,6 @@ public class RagAnswerService {
                                                 model,
                                                 topK,
                                                 minScore,
-                                                promptRef.get(),
                                                 finalAnswer,
                                                 latencyMs,
                                                 Boolean.TRUE.equals(noEvidenceRef.get()),
@@ -1949,6 +1952,10 @@ public class RagAnswerService {
         return s.substring(0, maxChars) + "...";
     }
 
+    private boolean shouldAppendHistory(ScopeGuardTools.ScopeGuardResult scopeGuardResult) {
+        return scopeGuardResult == null || scopeGuardResult.scoped();
+    }
+
     private static double round3(double v) {
         return Math.round(v * 1000.0) / 1000.0;
     }
@@ -1964,7 +1971,6 @@ public class RagAnswerService {
             String model,
             int topK,
             double minScore,
-            String promptText,
             String answerText,
             Integer latencyMs,
             boolean outOfScope,
@@ -1972,34 +1978,18 @@ public class RagAnswerService {
             RagRetrievalResult retrieval
     ) {
         try {
-            runLogger.logOnce(
+            candidateIngestionService.ingest(
                     sessionId,
-                    question,
                     model,
                     topK,
                     minScore,
-                    promptText,
-                    answerText,
                     latencyMs,
                     outOfScope,
                     error,
-                    retrieval
-            );
-
-            RagRunEvent evt = RagRunEvent.from(
-                    sessionId,
                     question,
-                    model,
-                    topK,
-                    minScore,
-                    promptText,
                     answerText,
-                    latencyMs,
-                    outOfScope,
-                    error,
-                    retrieval
+                    retrieval == null ? List.of() : retrieval.documents()
             );
-            logIngestionClient.ingestAsync(evt);
         } catch (Exception ignored) {
             // Logging must never break answering
         }

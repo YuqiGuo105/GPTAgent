@@ -85,7 +85,7 @@ public record RagAnswerRequest(
 
     public ResolvedSession resolveSession() {
         boolean temporary = sessionId == null || sessionId.isBlank();
-        String resolvedId = temporary ? "temp-" + java.util.UUID.randomUUID() : sessionId;
+        String resolvedId = temporary ? "temp-" + UUID.randomUUID() : sessionId;
         return new ResolvedSession(resolvedId, temporary);
     }
 
